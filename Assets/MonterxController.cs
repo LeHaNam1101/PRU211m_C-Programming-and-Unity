@@ -1,0 +1,90 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UIElements;
+
+public class MonterxController : MonoBehaviour
+{
+    public float Speed = 1f;
+    public Transform target;
+    public int Health = 1;
+    private int currentHealth;
+    public int damage = 0;
+    private Rigidbody2D rb;
+    public float knockbackForce;
+    public float knockBackTime = 5f;
+    private Vector3 initialPosition;
+    private PlayerController playerController;
+    private MonterxController monterxController;
+
+    void Start()
+    {
+        currentHealth = Health;
+        rb = GetComponent<Rigidbody2D>();
+    }
+
+    void FixedUpdate()
+    {
+
+        // Di chuyển quái vật về trụ thành
+        if (target != null)
+        {
+            Vector2 direction = (target.position - transform.position).normalized;
+            rb.velocity = direction * Speed;
+        }
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (monterxController != null)
+        {
+            damage = (int)monterxController.damage;
+        }
+        if (collision.transform.tag == "Tower")
+        {
+            Rigidbody2D rb = transform.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                //rb.isKinematic = false;
+                Vector2 dir = -(collision.transform.position - transform.position);
+                dir = dir.normalized * 10;
+                rb.AddForce(dir, ForceMode2D.Impulse);
+                StartCoroutine(knockBack(rb));
+            }
+        }
+    }
+
+    private IEnumerator knockBack(Rigidbody2D rb)
+    {
+        if (rb != null)
+        {
+            yield return new WaitForSeconds(knockBackTime);
+            rb.velocity = Vector2.zero;
+            //rb.isKinematic = true;
+        }
+    }
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.CompareTag("Player")) // Nếu va chạm với nhân vật
+        {
+            PlayerController player = other.gameObject.GetComponent<PlayerController>();
+            if (player != null)
+            {
+                _ = player.attackDamage; // Trừ máu của nhân vật
+                Destroy(gameObject); // Biến mất khỏi màn hình
+            }
+        }
+    }
+
+    private void Die()
+    {
+        GetComponent<LootBag>().InstantiatateLoot(transform.position);
+        // Khi quái vật chết, xóa nó khỏi scene
+        Destroy(gameObject);
+    }
+    void OnHit(int damage)
+    {
+        currentHealth -= damage;
+    }
+}
+
